@@ -1,5 +1,5 @@
 # ==============================================================================
-# Aurora Desktop Environment - Multi-Stage Dockerfile
+# Deskbox Desktop Environment - Multi-Stage Dockerfile
 # ==============================================================================
 # Based on Debian 13 (Trixie) with XFCE4 Desktop + XRDP Server
 # Build optimized in 3 stages for better cache utilization
@@ -74,13 +74,15 @@ RUN apt-get update && \
     apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+
+
 # Create Chromium wrapper for container environment
-# Uses --no-sandbox because Docker provides container-level isolation
+# Uses --no-sandbox because containers don't support user namespaces properly
 RUN mv /usr/bin/chromium /usr/bin/chromium-bin && \
     cat << 'EOF' > /usr/bin/chromium && \
     chmod +x /usr/bin/chromium
 #!/bin/bash
-exec /usr/bin/chromium-bin --no-sandbox --disable-dev-shm-usage "$@"
+exec /usr/bin/chromium-bin --no-sandbox "$@"
 EOF
 
 # Configures XRDP startup script
@@ -110,7 +112,7 @@ RUN chmod +x /etc/xrdp/startwm.sh
 FROM desktop AS final
 
 # Build arguments allow customization at build time
-ARG USER_NAME=aurora
+ARG USER_NAME=deskbox
 ARG USER_UID=1000
 
 # Converts ARGs to ENVs for runtime usage
@@ -150,10 +152,10 @@ RUN chmod +x /usr/local/bin/xfce4-first-run.sh
 
 # Creates autostart entry in /etc/skel (template for new users)
 RUN mkdir -p /etc/skel/.config/autostart && \
-    cat << 'EOF' > /etc/skel/.config/autostart/aurora-first-run.desktop
+    cat << 'EOF' > /etc/skel/.config/autostart/deskbox-first-run.desktop
 [Desktop Entry]
 Type=Application
-Name=Aurora First Run Configuration
+Name=Deskbox First Run Configuration
 Exec=/usr/local/bin/xfce4-first-run.sh
 Hidden=false
 NoDisplay=true
@@ -162,15 +164,15 @@ EOF
 
 # Copies autostart to existing user
 RUN mkdir -p /home/$USER_NAME/.config/autostart && \
-    cp /etc/skel/.config/autostart/aurora-first-run.desktop /home/$USER_NAME/.config/autostart/ && \
+    cp /etc/skel/.config/autostart/deskbox-first-run.desktop /home/$USER_NAME/.config/autostart/ && \
     chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/.config
 
 # ==============================================================================
 # Custom Profile Configuration
 # ==============================================================================
 # Creates system-wide profile with useful aliases and settings
-RUN cat << 'EOF' > /etc/profile.d/aurora.sh
-# Aurora Desktop Environment - Custom Profile
+RUN cat << 'EOF' > /etc/profile.d/deskbox.sh
+# Deskbox Desktop Environment - Custom Profile
 # Loaded automatically for all users
 
 # Useful aliases
@@ -200,11 +202,11 @@ export HISTCONTROL=ignoredups:erasedups
 export CLICOLOR=1
 export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43'
 
-echo "Welcome to Aurora Desktop Environment!"
+echo "Welcome to Deskbox Desktop Environment!"
 echo "Type 'll' for detailed file listing, 'htop' for system monitor"
 EOF
 
-RUN chmod +x /etc/profile.d/aurora.sh
+RUN chmod +x /etc/profile.d/deskbox.sh
 
 # Copies setup scripts into the container
 COPY docker/start-xrdp.sh /usr/local/bin/start-xrdp.sh

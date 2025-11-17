@@ -1,4 +1,4 @@
-# Aurora - Debian Desktop via RDP
+# Deskbox - Remote Desktop Environment
 
 Docker container with Debian 13 (Trixie) + Xfce4 + XRDP for remote access via Remote Desktop Protocol.
 
@@ -11,10 +11,10 @@ Docker container with Debian 13 (Trixie) + Xfce4 + XRDP for remote access via Re
   - SSH (port 2222) - Secure Shell access
 - **Backend**: xorgxrdp (native Xorg)
 - **Multiple Users**: Full support (simultaneous sessions)
-- **Default User**: aurora (UID 1000)
-- **Hostname**: aurora
+- **Default User**: deskbox (UID 1000)
+- **Hostname**: deskbox
 - **Timezone**: America/Cuiaba
-- **Persistence**: All home directories in `/mnt/aurora/home`
+- **Persistence**: All home directories in `/mnt/deskbox/home`
 - **Healthcheck**: Automatic monitoring of XRDP service
 - **Logging**: Structured logs for startup and XRDP events
 - **Pre-installed Tools**: git, vim, htop, tmux, tree, and more
@@ -35,7 +35,7 @@ Then edit `.env` to set your values:
 ```bash
 # Docker Hub Configuration
 DOCKER_USER=carlosrabelo
-IMAGE_NAME=aurora
+IMAGE_NAME=deskbox
 VERSION=0.0.1
 
 # User Configuration
@@ -43,7 +43,6 @@ USER_PASSWORD=your_secure_password_here
 
 # System Configuration
 TZ=America/Cuiaba
-USER_NAME=aurora
 ```
 
 **IMPORTANT**: Never commit the `.env` file to Git!
@@ -74,11 +73,11 @@ Use an RDP client (such as Remmina, Microsoft Remote Desktop, or rdesktop):
 
 ```bash
 # Linux
-rdesktop -u aurora -p your_password hostname:3389
+rdesktop -u deskbox -p your_password hostname:3389
 
 # Or with Remmina
 # Host: hostname:3389
-# User: aurora
+# User: deskbox
 # Password: the one you defined in .env
 ```
 
@@ -88,10 +87,10 @@ Connect via SSH for command-line access:
 
 ```bash
 # SSH access
-ssh -p 2222 aurora@hostname
+ssh -p 2222 deskbox@hostname
 
 # Or with SCP to transfer files
-scp -P 2222 file.txt aurora@hostname:/home/aurora/
+scp -P 2222 file.txt deskbox@hostname:/home/deskbox/
 ```
 
 ## Available Make Commands
@@ -108,8 +107,8 @@ scp -P 2222 file.txt aurora@hostname:/home/aurora/
 | `make logs` | Display Docker Compose logs in real-time |
 | `make view-logs` | View Aurora startup and XRDP logs |
 | `make sessions` | Show active user sessions |
-| `make backup` | Create backup of /mnt/aurora/home |
-| `make exec SVC=aurora` | Open shell in container |
+| `make backup` | Create backup of /mnt/deskbox/home |
+| `make exec SVC=deskbox` | Open shell in container |
 | `make config` | Display Docker Compose configuration |
 | `make clean` | Remove local Docker images (current version) |
 | `make clean-all` | Stop containers and remove all project images |
@@ -122,7 +121,7 @@ The container works like a normal Debian system - you can add as many users as y
 
 ### Default User
 
-- **User**: aurora
+- **User**: deskbox
 - **UID**: 1000
 - **Password**: Defined via `.env` (`USER_PASSWORD` variable)
 
@@ -134,7 +133,7 @@ Like a normal Debian system, use native commands:
 
 ```bash
 # Enter the container
-make exec SVC=aurora CTX=hostname
+make exec SVC=deskbox CTX=hostname
 
 # Add the user (Debian interactive command)
 adduser john
@@ -156,7 +155,7 @@ echo "startxfce4" > /home/john/.xsession
 
 ```bash
 # Enter the container
-make exec SVC=aurora CTX=hostname
+make exec SVC=deskbox CTX=hostname
 
 # Create the user
 useradd -m -s /bin/bash mary
@@ -176,8 +175,8 @@ echo "startxfce4" > /home/mary/.xsession
 Each user can connect simultaneously via RDP:
 
 ```bash
-# User 1: aurora
-rdesktop -u aurora -p aurora_password hostname:3389
+# User 1: deskbox
+rdesktop -u deskbox -p deskbox_password hostname:3389
 
 # User 2: john (in another session)
 rdesktop -u john -p john_password hostname:3389
@@ -196,7 +195,7 @@ rdesktop -u mary -p mary_password hostname:3389
 
 **Support for:**
 - Multiple simultaneous sessions
-- Data persisted in `/mnt/aurora/home` volume
+- Data persisted in `/mnt/deskbox/home` volume
 - Standard structure (Desktop, Documents, etc)
 
 ### Managing Users
@@ -204,7 +203,7 @@ rdesktop -u mary -p mary_password hostname:3389
 Enter the container and use standard Debian commands:
 
 ```bash
-make exec SVC=aurora CTX=hostname
+make exec SVC=deskbox CTX=hostname
 ```
 
 **List users:**
@@ -236,7 +235,7 @@ groups john
 
 ### Important Warnings
 
-1. **NOPASSWD sudo**: The `aurora` user can execute sudo commands WITHOUT password
+1. **NOPASSWD sudo**: The `deskbox` user can execute sudo commands WITHOUT password
    - **Risk**: If someone gains access to the user, they have full control of the container
    - **Recommendation**: Use only in controlled/development environments
    - **Production**: Remove `NOPASSWD` from line 181 in Dockerfile
@@ -285,9 +284,9 @@ For production environments:
 ## Volume Structure
 
 ```
-/mnt/aurora/
+/mnt/deskbox/
     ├── home/                    → /home (in container)
-    │   ├── aurora/              # Default user (UID 1000)
+    │   ├── deskbox/              # Default user (UID 1000)
     │   │   ├── Desktop/
     │   │   ├── Documents/
     │   │   ├── Downloads/
@@ -297,18 +296,18 @@ For production environments:
     │   ├── mary/
     │   └── ...
     │
-    └── logs/                    → /var/log/aurora (in container)
-        ├── startup.log          # Aurora startup logs
+    └── logs/                    → /var/log/deskbox (in container)
+        ├── startup.log          # Deskbox startup logs
         └── xrdp.log             # XRDP server logs
 ```
 
 **Persisted data on the host:**
-- **Home directories**: `/mnt/aurora/home/*` - All user data, configurations, and files
-- **Logs**: `/mnt/aurora/logs/*` - Startup and XRDP logs for troubleshooting
+- **Home directories**: `/mnt/deskbox/home/*` - All user data, configurations, and files
+- **Logs**: `/mnt/deskbox/logs/*` - Startup and XRDP logs for troubleshooting
 
 ## Pre-installed Tools
 
-Aurora comes with essential development and system tools pre-installed:
+Debian-RDP comes with essential development and system tools pre-installed:
 
 **Development Tools:**
 - git - Version control
@@ -342,7 +341,7 @@ ports       # Show network ports (netstat)
 
 ## Logging and Monitoring
 
-Aurora implements structured logging for better troubleshooting:
+Debian-RDP implements structured logging for better troubleshooting:
 
 **View startup logs:**
 ```bash
@@ -359,7 +358,7 @@ make sessions CTX=hostname
 make logs CTX=hostname
 ```
 
-**Log files (persisted on host at `/mnt/aurora/logs/`):**
+**Log files (persisted on host at `/mnt/deskbox/logs/`):**
 - `startup.log` - Startup process logs
 - `xrdp.log` - XRDP server logs
 
@@ -372,27 +371,27 @@ make logs CTX=hostname
 make backup CTX=hostname
 ```
 
-This creates a timestamped backup file in `/tmp/aurora-backup-YYYYMMDD-HHMMSS.tar.gz` on the remote host.
+This creates a timestamped backup file in `/tmp/deskbox-backup-YYYYMMDD-HHMMSS.tar.gz` on the remote host.
 
 The backup includes:
-- All user home directories (`/mnt/aurora/home/*`)
-- All logs (`/mnt/aurora/logs/*`)
+- All user home directories (`/mnt/deskbox/home/*`)
+- All logs (`/mnt/deskbox/logs/*`)
 
 **Restore from backup:**
 ```bash
 # On the remote host
 ssh root@hostname
 cd /tmp
-tar -xzf aurora-backup-20250113-120000.tar.gz -C /
+tar -xzf deskbox-backup-20250113-120000.tar.gz -C /
 ```
 
 **Manual backup of specific directories:**
 ```bash
 # Backup only home directories
-ssh root@hostname "tar -czf /tmp/aurora-home-backup.tar.gz /mnt/aurora/home"
+ssh root@hostname "tar -czf /tmp/deskbox-home-backup.tar.gz /mnt/deskbox/home"
 
 # Backup only logs
-ssh root@hostname "tar -czf /tmp/aurora-logs-backup.tar.gz /mnt/aurora/logs"
+ssh root@hostname "tar -czf /tmp/deskbox-logs-backup.tar.gz /mnt/deskbox/logs"
 ```
 
 ## Troubleshooting
@@ -412,7 +411,7 @@ ssh root@hostname "tar -czf /tmp/aurora-logs-backup.tar.gz /mnt/aurora/logs"
 3. Check the logs:
    ```bash
    make logs CTX=hostname
-   # Or view Aurora-specific logs
+   # Or view Debian-RDP-specific logs
    make view-logs CTX=hostname
    ```
 
@@ -425,7 +424,7 @@ ssh root@hostname "tar -czf /tmp/aurora-logs-backup.tar.gz /mnt/aurora/logs"
 
 1. Verify SSH port is exposed:
    ```bash
-   docker ps | grep aurora
+   docker ps | grep deskbox
    # Should show 0.0.0.0:2222->22/tcp
    ```
 
@@ -436,26 +435,26 @@ ssh root@hostname "tar -czf /tmp/aurora-logs-backup.tar.gz /mnt/aurora/logs"
 
 3. Try connecting with verbose mode:
    ```bash
-   ssh -v -p 2222 aurora@hostname
+   ssh -v -p 2222 deskbox@hostname
    ```
 
 ### Black screen after login
 
-1. Check Aurora logs for errors:
+1. Check Debian-RDP logs for errors:
    ```bash
    make view-logs CTX=hostname
    ```
 
 2. Check home directory permissions:
    ```bash
-   make exec SVC=aurora CTX=hostname
-   ls -la /home/aurora
+   make exec SVC=deskbox CTX=hostname
+   ls -la /home/deskbox
    ```
 
 3. Verify XFCE4 configuration:
    ```bash
-   make exec SVC=aurora CTX=hostname
-   cat /home/aurora/.xsession
+   make exec SVC=deskbox CTX=hostname
+   cat /home/deskbox/.xsession
    # Should contain: startxfce4
    ```
 
@@ -478,11 +477,9 @@ All environment variables should be configured in the `.env` file (copy from `.e
 | Variable | Default | Description |
 |----------|--------|-----------|
 | `DOCKER_USER` | carlosrabelo | Docker Hub username |
-| `IMAGE_NAME` | aurora | Docker image name |
-| `VERSION` | 0.0.1 | Image version tag |
+| `IMAGE_NAME` | deskbox | Docker image name |
+| `USER_PASSWORD` | deskbox | RDP password (change this!) |
 | `TZ` | America/Cuiaba | System timezone |
-| `USER_NAME` | aurora | Default username |
-| `USER_PASSWORD` | aurora | RDP password (change this!) |
 
 ## Architecture
 

@@ -1,12 +1,12 @@
 #!/bin/bash
 # ==============================================================================
-# Aurora XFCE4 First Run Configuration
+# Deskbox XFCE4 First Run Configuration
 # ==============================================================================
 # Configures XFCE4 desktop environment on first user login
 # Executed automatically via autostart mechanism
 # ==============================================================================
 
-MARKER_FILE="$HOME/.config/aurora-configured"
+MARKER_FILE="$HOME/.config/deskbox-configured"
 
 # Exit if already configured
 if [ -f "$MARKER_FILE" ]; then
@@ -214,7 +214,7 @@ EOF
 # Create Welcome file on Desktop
 # ==============================================================================
 cat > "$HOME/Desktop/Welcome.txt" << 'EOF'
-Welcome to Aurora Desktop Environment!
+Welcome to Deskbox Desktop Environment!
 
 Keyboard Shortcuts:
 - Alt + F2         : Application Finder
@@ -230,7 +230,7 @@ Desktop Features:
 - Desktop icons (Home, Filesystem, Trash)
 
 Pre-installed Applications:
-- Google Chrome    : Web Browser
+- Chromium         : Web Browser
 - Thunar           : File Manager
 - Mousepad         : Text Editor
 - Xfce4 Terminal   : Terminal Emulator

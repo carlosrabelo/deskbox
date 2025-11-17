@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Aurora Desktop Environment Setup Script
+# Debian-RDP Desktop Environment Setup Script
 # ==============================================================================
 # Ensures proper initialization of XFCE4 desktop environment
 # ==============================================================================

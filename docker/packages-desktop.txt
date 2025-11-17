@@ -45,3 +45,4 @@ lightdm-gtk-greeter
 lightdm
 desktop-base
 gnome-backgrounds
+chromium

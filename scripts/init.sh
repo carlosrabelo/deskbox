@@ -1,13 +1,13 @@
 #!/bin/sh
 # ==============================================================================
-# Aurora Host Initialization Script
+# Deskbox Host Initialization Script
 # ==============================================================================
 # Prepares directory structure on HOST before first container start
 # Executed via SSH on remote host: make init CTX=<context>
 #
 # Requirements:
 #   - Root SSH access to host
-#   - Available space in /mnt/aurora
+#   - Available space in /mnt/deskbox
 #
 # Usage: make init CTX=production
 # ==============================================================================
@@ -15,12 +15,12 @@
 # ==============================================================================
 # Configuration Variables
 # ==============================================================================
-BASE_DIR="/mnt/aurora/home"           # Base directory mounted as /home in container
-LOGS_DIR="/mnt/aurora/logs"           # Logs directory mounted as /var/log/aurora
-USER_NAME="aurora"                    # Default user name
-USER_UID=1000                         # User ID (must match container UID)
-USER_GID=1000                         # Group ID (must match container GID)
-DIR_PERMISSIONS=755                   # Directory permissions (rwxr-xr-x)
+BASE_DIR="/mnt/deskbox/home"           # Base directory mounted as /home in container
+LOGS_DIR="/mnt/deskbox/logs"           # Logs directory mounted as /var/log/deskbox
+USER_NAME="deskbox"                    # Fixed user name
+USER_UID="${USER_UID:-1000}"           # User ID from env or default (must match container UID)
+USER_GID="${USER_GID:-1000}"           # Group ID from env or default (must match container GID)
+DIR_PERMISSIONS=755                    # Directory permissions (rwxr-xr-x)
 
 # XDG user directories to create
 USER_DIRS="Desktop Documents Downloads Pictures Videos"
@@ -28,7 +28,7 @@ USER_DIRS="Desktop Documents Downloads Pictures Videos"
 # ==============================================================================
 # Initialization
 # ==============================================================================
-echo "Initializing directory structure for Aurora project..."
+echo "Initializing directory structure for Deskbox project..."
 
 # ==============================================================================
 # Creates base directories that will be mounted in container

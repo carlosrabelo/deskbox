@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Aurora XRDP Startup Script
+# Deskbox XRDP Startup Script
 # ==============================================================================
 # Initializes and configures XRDP (Remote Desktop) server in container
 # Executed automatically as CMD in Dockerfile
@@ -11,7 +11,7 @@ set -e  # Stop execution on error
 # ==============================================================================
 # Logging Configuration
 # ==============================================================================
-LOG_DIR="/var/log/aurora"
+LOG_DIR="/var/log/deskbox"
 LOG_FILE="$LOG_DIR/startup.log"
 XRDP_LOG_LEVEL="${XRDP_LOG_LEVEL:-INFO}"
 
@@ -26,14 +26,14 @@ log() {
 }
 
 log "INFO" "==================================================================="
-log "INFO" "Aurora Desktop Environment - Startup Process"
+log "INFO" "Deskbox Desktop Environment - Startup Process"
 log "INFO" "==================================================================="
 
 # ==============================================================================
 # Configures user password via environment variable
 # ==============================================================================
 # USER_PASSWORD should be defined in docker-compose.yml or via -e
-# Default: 'aurora' (defined in docker-compose.yml)
+# Default: 'deskbox' (defined in docker-compose.yml)
 if [ -n "$USER_PASSWORD" ]; then
     log "INFO" "Setting password for user $USER_NAME..."
     echo "$USER_NAME:$USER_PASSWORD" | chpasswd
@@ -93,7 +93,7 @@ sleep 2
 # --nodaemon: Keeps process in foreground (required for containers)
 log "INFO" "Starting XRDP server..."
 log "INFO" "==================================================================="
-log "INFO" "Aurora Desktop Environment is ready!"
+log "INFO" "Deskbox Desktop Environment is ready!"
 log "INFO" "RDP Access: <host>:3389 (user: $USER_NAME)"
 log "INFO" "SSH Access: ssh -p 2222 $USER_NAME@<host>"
 log "INFO" "==================================================================="
