@@ -30,16 +30,28 @@ log "INFO" "Deskbox Desktop Environment - Startup Process"
 log "INFO" "==================================================================="
 
 # ==============================================================================
-# Configures user password via environment variable
+# Configures user password via Docker secrets or environment variable
 # ==============================================================================
-# USER_PASSWORD should be defined in docker-compose.yml or via -e
-# Default: 'deskbox' (defined in docker-compose.yml)
-if [ -n "$USER_PASSWORD" ]; then
-    log "INFO" "Setting password for user $USER_NAME..."
+# Priority: Docker secrets > Environment variable > Default
+if [ -f "/run/secrets/user_password" ]; then
+    log "INFO" "Setting password from Docker secret..."
+    USER_PASSWORD=$(cat /run/secrets/user_password)
     echo "$USER_NAME:$USER_PASSWORD" | chpasswd
-    log "INFO" "Password set successfully"
+    log "INFO" "Password set successfully from Docker secret"
+elif [ -n "$USER_PASSWORD" ]; then
+    log "INFO" "Setting password from environment variable..."
+    echo "$USER_NAME:$USER_PASSWORD" | chpasswd
+    log "INFO" "Password set successfully from environment variable"
 else
-    log "WARN" "USER_PASSWORD not set. Configure via -e USER_PASSWORD=yourpassword"
+    log "WARN" "USER_PASSWORD not set and no Docker secret found"
+    log "WARN" "Using default password 'deskbox' - CHANGE THIS IN PRODUCTION!"
+    echo "$USER_NAME:deskbox" | chpasswd
+fi
+
+# Configure sudo password if separate secret exists
+if [ -f "/run/secrets/sudo_password" ]; then
+    log "INFO" "Separate sudo password detected - not implemented in this version"
+    log "INFO" "User password will be used for sudo access"
 fi
 
 # ==============================================================================
@@ -47,7 +59,27 @@ fi
 # ==============================================================================
 log "INFO" "Setting up desktop environment..."
 sudo -u "$USER_NAME" /usr/local/bin/setup-desktop.sh
-log "INFO" "Desktop environment configured"
+
+# ==============================================================================
+# Configure Keyring for User
+# ==============================================================================
+log "INFO" "Configuring keyring for user $USER_NAME..."
+
+# Create keyring configuration directory and file
+mkdir -p "/home/$USER_NAME/.local/share/keyrings"
+cat > "/home/$USER_NAME/.local/share/keyrings/default" << 'EOF'
+[keyring]
+display-name=Default
+lock-on-idle=false
+lock-timeout=0
+EOF
+
+# Set proper ownership and permissions
+chown -R "$USER_NAME:$USER_NAME" "/home/$USER_NAME/.local/share/keyrings"
+chmod 700 "/home/$USER_NAME/.local/share/keyrings"
+chmod 600 "/home/$USER_NAME/.local/share/keyrings/default"
+
+log "INFO" "Keyring configuration completed"
 
 # ==============================================================================
 # Creates runtime directories required for XRDP, D-Bus, and SSH
@@ -56,6 +88,31 @@ log "INFO" "Creating runtime directories..."
 mkdir -p /var/run/dbus
 mkdir -p /var/run/xrdp
 mkdir -p /var/run/sshd
+
+# ==============================================================================
+# Setup Log Rotation
+# ==============================================================================
+log "INFO" "Setting up log rotation..."
+# Install cron if not available
+if ! command -v cron >/dev/null 2>&1; then
+    apt-get update && apt-get install -y cron && apt-get clean
+fi
+
+# Setup cron job for log rotation
+if [ -f "/usr/local/bin/log-rotation.sh" ]; then
+    # Create cron job for hourly log rotation
+    echo "0 * * * * root /usr/local/bin/log-rotation.sh rotate >/dev/null 2>&1" > /etc/cron.d/deskbox-log-rotation
+    echo "0 2 * * * root /usr/local/bin/log-rotation.sh compress >/dev/null 2>&1" >> /etc/cron.d/deskbox-log-rotation
+    echo "0 3 * * 0 root /usr/local/bin/log-rotation.sh clean >/dev/null 2>&1" >> /etc/cron.d/deskbox-log-rotation
+    
+    # Start cron service
+    service cron start
+    log "INFO" "Log rotation configured and cron service started"
+else
+    log "WARN" "Log rotation script not found"
+fi
+
+# Keyring already configured above
 
 # ==============================================================================
 # Starts D-Bus (Message Bus for inter-process communication)

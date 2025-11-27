@@ -9,7 +9,8 @@
 # Stage 1: Base System - Essential packages and global configurations
 # ==============================================================================
 # This layer rarely changes, providing long-lasting cache
-FROM debian:trixie AS base
+# Using debian:trixie with explicit registry for better connectivity
+FROM docker.io/library/debian:trixie AS base
 
 # Environment settings for non-interactive installation
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -122,10 +123,10 @@ ENV USER_NAME=${USER_NAME} \
 # Creates non-root user with sudo privileges
 # 1. Creates new user with specific UID
 # 2. Adds to sudo group
-# 3. Configures passwordless sudo (for development)
+# 3. Configures sudo with password requirement (security improvement)
 RUN useradd -m -u $USER_UID -s /bin/bash "$USER_NAME" && \
     usermod -aG sudo "$USER_NAME" && \
-    echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    echo "$USER_NAME ALL=(ALL) ALL" >> /etc/sudoers
 
 # Configures .xsession to automatically start XFCE4 on RDP login
 RUN echo "startxfce4" > /home/$USER_NAME/.xsession && \
@@ -142,6 +143,13 @@ RUN mkdir -p /var/run/sshd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config && \
     sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
     echo "AllowUsers $USER_NAME" >> /etc/ssh/sshd_config
+
+# ==============================================================================
+# Docker Secrets Support
+# ==============================================================================
+# Creates directory for Docker secrets and sets permissions
+RUN mkdir -p /run/secrets && \
+    chmod 700 /run/secrets
 
 # ==============================================================================
 # XFCE4 First Run Configuration
@@ -208,11 +216,26 @@ EOF
 
 RUN chmod +x /etc/profile.d/deskbox.sh
 
+# ==============================================================================
+# Keyring Configuration (No Password Prompts)
+# ==============================================================================
+# Creates empty keyring configuration to prevent password prompts
+RUN mkdir -p /etc/skel/.local/share/keyrings && \
+    cat > /etc/skel/.local/share/keyrings/default << 'EOF'
+[keyring]
+display-name=Default
+lock-on-idle=false
+lock-timeout=0
+EOF
+
+# Chromium wrapper will be created at runtime in start-xrdp.sh
+
 # Copies setup scripts into the container
 COPY docker/start-xrdp.sh /usr/local/bin/start-xrdp.sh
 COPY docker/setup-desktop.sh /usr/local/bin/setup-desktop.sh
+COPY scripts/log-rotation.sh /usr/local/bin/log-rotation.sh
 
-RUN chmod +x /usr/local/bin/start-xrdp.sh /usr/local/bin/setup-desktop.sh
+RUN chmod +x /usr/local/bin/start-xrdp.sh /usr/local/bin/setup-desktop.sh /usr/local/bin/log-rotation.sh
 
 # Exposes RDP (Remote Desktop Protocol) port and SSH port
 EXPOSE 3389 22

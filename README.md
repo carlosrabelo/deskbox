@@ -65,7 +65,7 @@ make build CTX=hostname
 make start CTX=hostname
 ```
 
-### 5. Connect to Aurora
+### 5. Connect to Deskbox
 
 **Option 1: RDP (Graphical Desktop)**
 
@@ -112,6 +112,14 @@ scp -P 2222 file.txt deskbox@hostname:/home/deskbox/
 | `make config` | Display Docker Compose configuration |
 | `make clean` | Remove local Docker images (current version) |
 | `make clean-all` | Stop containers and remove all project images |
+
+### Management Scripts
+
+| Script | Description |
+|--------|-----------|
+| `./scripts/log-rotation.sh` | Rotate and manage log files |
+
+
 
 All commands accept `CTX=<context>` to specify the remote Docker host and can override variables from `.env`.
 
@@ -233,53 +241,101 @@ groups john
 
 ## Security Considerations
 
-### Important Warnings
+### ✅ Security Improvements Implemented
 
-1. **NOPASSWD sudo**: The `deskbox` user can execute sudo commands WITHOUT password
-   - **Risk**: If someone gains access to the user, they have full control of the container
-   - **Recommendation**: Use only in controlled/development environments
-   - **Production**: Remove `NOPASSWD` from line 181 in Dockerfile
+This project includes enhanced security features:
 
-2. **Password via Environment Variable**
-   - Passwords are defined at runtime via `USER_PASSWORD`
-   - **Best practice**: Use Docker secrets in production
-   - Never expose `USER_PASSWORD` in logs or repositories
+1. **✅ Sudo with Password**: NOPASSWD has been removed - sudo now requires password
+2. **✅ Docker Secrets Support**: Secure password management via Docker secrets
+3. **✅ Log Rotation**: Automatic log rotation to prevent disk space issues
+4. **✅ Script Validations**: Enhanced input validation and error handling
 
-3. **Port 3389 Exposed**
-   - RDP is not encrypted by default
-   - **Recommendation**: Use VPN or SSH tunnel on untrusted networks
-   - Consider using `ports: - "127.0.0.1:3389:3389"` and SSH tunnel
+### Security Options
 
-4. **Chromium Browser Sandbox**
-   - Chromium runs with `--no-sandbox` flag (required for containers)
-   - **Safe**: Docker provides container-level isolation (namespaces, cgroups, seccomp)
-   - The browser is still isolated from the host system
-   - This is the standard approach for running browsers in containers
+#### Standard Configuration (Development)
+```bash
+# Use environment variables in .env
+make start CTX=hostname
+```
 
-### Recommended Security Improvements
+#### Production Configuration (Recommended)
+```bash
+# Set secure password in .env file
+echo "USER_PASSWORD=your_secure_password" >> .env
+make start CTX=hostname
+```
 
-For production environments:
+#### Option 2: Production Configuration (Recommended)
+```bash
+# Use docker-compose.prod.yml with Docker secrets
+./scripts/manage-secrets.sh user-password your_secure_password
+DOCKER_COMPOSE_FILE=docker-compose.prod.yml make start CTX=hostname
+```
 
-1. **Remove NOPASSWD**:
-   ```dockerfile
-   # Line 181 in Dockerfile
-   echo "$USER_NAME ALL=(ALL) ALL" >> /etc/sudoers
-   ```
+#### Option 3: High Security Configuration
+```bash
+# Use docker-compose.secure.yml with restricted access
+./scripts/manage-secrets.sh user-password your_secure_password
+DOCKER_COMPOSE_FILE=docker-compose.secure.yml make start CTX=hostname
 
-2. **Use Docker Secrets**:
-   ```yaml
-   secrets:
-     - user_password
-   ```
+# Access via SSH tunnel
+./scripts/secure-rdp.sh hostname 3389 deskbox
+```
 
-3. **SSH Tunnel for RDP**:
+### Important Security Notes
+
+1. **Password Management**
+   - **Development**: Environment variables (`.env` file)
+   - **Production**: Docker secrets (recommended)
+   - **Never commit passwords to Git**
+
+2. **Network Access**
+   - **Standard**: RDP exposed on `0.0.0.0:3389`
+   - **Secure**: RDP on `127.0.0.1:3389` (localhost only)
+   - **SSH Tunnel**: Most secure option for remote access
+
+3. **Container Security**
+   - **User isolation**: Non-root user with limited privileges
+   - **Filesystem**: Read-only with specific writable directories
+   - **Capabilities**: Minimal Linux capabilities
+   - **Resource limits**: CPU and memory constraints
+
+4. **Chromium Browser**
+   - Runs with `--no-sandbox` (required for containers)
+   - **Safe**: Docker provides container-level isolation
+   - **Standard approach** for browsers in containers
+
+### Security Best Practices
+
+#### For Production Environments:
+
+1. **Use Environment Variables**:
    ```bash
-   ssh -L 3389:localhost:3389 user@hostname
-   # Then connect RDP to localhost:3389
+   echo "USER_PASSWORD=your_secure_password" >> .env
+   # Store the password securely
    ```
 
-4. **Firewall/Network Policies**:
-   - Restrict access to port 3389 only from trusted IPs
+2. **Monitor Logs**:
+   ```bash
+   make view-logs CTX=hostname
+   ./scripts/log-rotation.sh stats
+   ```
+
+3. **Regular Updates**:
+   ```bash
+   # Update base image regularly
+   make build CTX=hostname
+   make start CTX=hostname
+   ```
+
+### Security Monitoring
+
+The project includes automated security monitoring:
+
+- **Log Rotation**: Prevents disk space exhaustion
+- **Health Checks**: Monitors service availability
+- **Access Logging**: Tracks connection attempts
+- **Resource Limits**: Prevents resource exhaustion attacks
 
 ## Volume Structure
 
@@ -322,6 +378,7 @@ Debian-RDP comes with essential development and system tools pre-installed:
 
 **Desktop Applications:**
 - Chromium - Web browser (optimized for containers)
+- Chromium Simple - Web browser without keyring password prompts
 - Thunar - File manager
 - Mousepad - Text editor
 - Xfce4 Terminal - Terminal emulator
@@ -337,6 +394,35 @@ gc          # Git commit
 gd          # Git diff
 update      # System update (apt update && upgrade)
 ports       # Show network ports (netstat)
+chromium    # Opens Chromium Simple (no keyring prompts)
+chrome       # Opens Chromium Simple (no keyring prompts)
+```
+
+## Keyring Configuration
+
+The container comes with pre-configured keyring settings to prevent password prompts:
+
+### ✅ Automatic Configuration
+- **Empty keyring** created during build
+- **Chromium Simple** wrapper without keyring prompts
+- **Environment variables** set to disable keyring
+- **Aliases** configured for easy access
+
+### 🌐 Browser Options
+1. **Chromium Simple**: Use `chromium` or `chromium-simple` command
+2. **Standard Chromium**: Still available if needed (may prompt for keyring)
+
+### 🔧 Manual Configuration (if needed)
+If you need to reconfigure keyring settings:
+```bash
+# Inside container as deskbox user
+mkdir -p ~/.local/share/keyrings
+cat > ~/.local/share/keyrings/default << 'EOF'
+[keyring]
+display-name=Default
+lock-on-idle=false
+lock-timeout=0
+EOF
 ```
 
 ## Logging and Monitoring

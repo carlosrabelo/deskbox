@@ -20,9 +20,8 @@ services:
     hostname: deskbox                  # Container hostname
 
     # Exposes RDP (Remote Desktop Protocol) port and SSH port
-    # Host:Container
     ports:
-      - "3389:3389"  # RDP
+      - "${RDP_BIND_ADDRESS:-0.0.0.0}:3389:3389"  # RDP - Configurable bind address
       - "2222:22"    # SSH
 
     # Restarts automatically except if manually stopped
@@ -31,8 +30,9 @@ services:
     # Environment variables passed to the container
     environment:
       - TZ=${TZ}                      # System timezone
-      - USER_PASSWORD=${USER_PASSWORD}  # RDP password (set in .env)
+      - USER_PASSWORD=${USER_PASSWORD:-}  # RDP password (fallback if no secrets)
       - HOSTNAME=deskbox               # Container hostname
+      - SECURITY_MODE=${SECURITY_MODE:-development}  # Security mode
 
     # Isolated network for inter-container communication
     networks:
@@ -45,10 +45,11 @@ services:
       - /mnt/deskbox/logs:/var/log/deskbox  # Persists Deskbox logs
 
     # Shared memory for GUI applications (prevents crashes)
-    shm_size: "1g"
+    shm_size: "${SHM_SIZE:-1g}"
 
-    # Memory limit
-    mem_limit: "4096m"
+    # Resource limits (configurable)
+    mem_limit: "${MEMORY_LIMIT:-4096m}"
+    cpus: "${CPU_LIMIT:-2.0}"
 
     # Health check to ensure XRDP is running properly
     healthcheck:
@@ -58,6 +59,13 @@ services:
       retries: 3
       start_period: 40s
 
+    # Labels for better organization and monitoring
+    labels:
+      - "com.deskbox.version=${VERSION}"
+      - "com.deskbox.environment=${ENVIRONMENT:-development}"
+      - "com.deskbox.service=remote-desktop"
+      - "com.deskbox.security-mode=${SECURITY_MODE:-development}"
+
 # ==============================================================================
 # Networks
 # ==============================================================================
@@ -66,3 +74,4 @@ networks:
   deskbox-network:
     name: deskbox-network    # Explicit network name
     driver: bridge          # Default driver for local communication
+
