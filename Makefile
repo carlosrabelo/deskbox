@@ -96,12 +96,14 @@ build:
 		echo "Tagged as $(REPO_IMAGE):$(VERSION) and $(REPO_IMAGE):latest"; \
 	fi
 
-# Initializes directory structure on remote host via SSH
+# Initializes directory structure on remote host via Docker Context
 # Creates /mnt/deskbox/home and basic user structure
-# Requires: SSH root access to host defined in CTX
+# Uses a temporary busybox container to create directories
 init:
-	@echo "Initializing directories on remote host..."
-	@USER_NAME="$(USER_NAME)" USER_UID="$(USER_UID)" USER_GID="$(USER_GID)" ssh root@$(CTX) "bash -s" < ./scripts/init.sh
+	@echo "Initializing directories on host context $(CTX)..."
+	@$(DOCKER_CMD) run --rm \
+		-v /mnt/deskbox:/mnt/deskbox \
+		busybox sh -c "mkdir -p /mnt/deskbox/home /mnt/deskbox/logs && chown -R $(USER_UID):$(USER_GID) /mnt/deskbox && echo 'Directories created and permissions set'"
 
 # Starts containers in daemon mode (background)
 # --remove-orphans: removes orphan containers from previous runs

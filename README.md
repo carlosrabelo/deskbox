@@ -1,10 +1,10 @@
 # Deskbox - Remote Desktop Environment
 
-Docker container with Debian 13 (Trixie) + Xfce4 + XRDP for remote access via Remote Desktop Protocol.
+Docker container with Debian 12 (Bookworm) + Xfce4 + XRDP for remote access via Remote Desktop Protocol.
 
 ## Features
 
-- **Base**: Debian 13 (Trixie) - Testing release
+- **Base**: Debian 12 (Bookworm) - Stable release
 - **Desktop Environment**: Xfce4 (with auto-configuration on first login)
 - **Remote Access**:
   - XRDP (port 3389) - Remote Desktop Protocol
@@ -117,7 +117,7 @@ scp -P 2222 file.txt deskbox@hostname:/home/deskbox/
 
 | Script | Description |
 |--------|-----------|
-| `./scripts/log-rotation.sh` | Rotate and manage log files |
+| `./docker/log-rotation.sh` | Rotate and manage log files |
 
 
 
@@ -247,12 +247,15 @@ This project includes enhanced security features:
 
 1. **✅ Sudo with Password**: NOPASSWD has been removed - sudo now requires password
 2. **✅ Docker Secrets Support**: Secure password management via Docker secrets
-3. **✅ Log Rotation**: Automatic log rotation to prevent disk space issues
-4. **✅ Script Validations**: Enhanced input validation and error handling
+1. **✅ Base**: Debian 12 (Bookworm)
+2. **✅ Sudo with Password**: NOPASSWD has been removed - sudo now requires password
+3. **✅ Docker Secrets Support**: Secure password management via Docker secrets
+4. **✅ Log Rotation**: Automatic log rotation to prevent disk space issues
+5. **✅ Script Validations**: Enhanced input validation and error handling
 
 ### Security Options
 
-#### Standard Configuration (Development)
+#### Standard Configuration
 ```bash
 # Use environment variables in .env
 make start CTX=hostname
@@ -265,33 +268,15 @@ echo "USER_PASSWORD=your_secure_password" >> .env
 make start CTX=hostname
 ```
 
-#### Option 2: Production Configuration (Recommended)
-```bash
-# Use docker-compose.prod.yml with Docker secrets
-./scripts/manage-secrets.sh user-password your_secure_password
-DOCKER_COMPOSE_FILE=docker-compose.prod.yml make start CTX=hostname
-```
-
-#### Option 3: High Security Configuration
-```bash
-# Use docker-compose.secure.yml with restricted access
-./scripts/manage-secrets.sh user-password your_secure_password
-DOCKER_COMPOSE_FILE=docker-compose.secure.yml make start CTX=hostname
-
-# Access via SSH tunnel
-./scripts/secure-rdp.sh hostname 3389 deskbox
-```
-
 ### Important Security Notes
 
 1. **Password Management**
    - **Development**: Environment variables (`.env` file)
-   - **Production**: Docker secrets (recommended)
    - **Never commit passwords to Git**
 
 2. **Network Access**
    - **Standard**: RDP exposed on `0.0.0.0:3389`
-   - **Secure**: RDP on `127.0.0.1:3389` (localhost only)
+   - **Secure**: You can bind to localhost by setting `RDP_BIND_ADDRESS=127.0.0.1` in `.env`
    - **SSH Tunnel**: Most secure option for remote access
 
 3. **Container Security**
@@ -318,7 +303,7 @@ DOCKER_COMPOSE_FILE=docker-compose.secure.yml make start CTX=hostname
 2. **Monitor Logs**:
    ```bash
    make view-logs CTX=hostname
-   ./scripts/log-rotation.sh stats
+   ./docker/log-rotation.sh stats
    ```
 
 3. **Regular Updates**:

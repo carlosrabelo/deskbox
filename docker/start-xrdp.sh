@@ -30,7 +30,72 @@ log "INFO" "Deskbox Desktop Environment - Startup Process"
 log "INFO" "==================================================================="
 
 # ==============================================================================
-# Configures user password via Docker secrets or environment variable
+# Self-Healing & Initialization Logic
+# ==============================================================================
+# Ensures the environment is correct regardless of volume state (empty, wrong permissions, etc)
+# This allows "on-the-fly" usage without external preparation steps like 'make init'
+
+ensure_home_structure() {
+    local user_home="/home/$USER_NAME"
+    
+    log "INFO" "Verifying home directory structure for $USER_NAME..."
+
+    # If .bashrc is missing, it's a strong indicator that the home dir is empty or uninitialized
+    if [ ! -f "$user_home/.bashrc" ]; then
+        log "WARN" "Home directory appears incomplete. Populating from /etc/skel..."
+        cp -r /etc/skel/. "$user_home/" 2>/dev/null || true
+        log "INFO" "Populated $user_home from /etc/skel"
+    fi
+
+    # Create standard XDG directories if they don't exist
+    for dir in Desktop Documents Downloads Music Pictures Public Templates Videos; do
+        if [ ! -d "$user_home/$dir" ]; then
+            log "INFO" "Creating missing directory: $user_home/$dir"
+            mkdir -p "$user_home/$dir"
+        fi
+    done
+
+    # Ensure .local/share/keyrings exists (for the keyring config later)
+    mkdir -p "$user_home/.local/share/keyrings"
+}
+
+fix_permissions() {
+    local user_home="/home/$USER_NAME"
+    
+    log "INFO" "Fixing permissions..."
+    
+    # Fix Home Directory Permissions
+    # Recursive chown can be slow on huge volumes, but it's necessary for self-healing
+    # We only run it if the owner of the home root is not correct
+    if [ "$(stat -c '%u:%g' "$user_home")" != "$USER_UID:$USER_UID" ]; then
+         log "WARN" "Home directory ownership incorrect. Fixing recursively..."
+         chown -R "$USER_UID:$USER_UID" "$user_home"
+         log "INFO" "Home directory permissions fixed."
+    fi
+    
+    # Also ensure the user can write to their own home (sometimes mounts are read-only or root-owned)
+    # This is a focused fix for top-level files
+    chown "$USER_UID:$USER_UID" "$user_home" 2>/dev/null || true
+    chown "$USER_UID:$USER_UID" "$user_home"/* 2>/dev/null || true
+    chown "$USER_UID:$USER_UID" "$user_home"/.[!.]* 2>/dev/null || true
+    chown -R "$USER_UID:$USER_UID" "$user_home/.config" 2>/dev/null || true
+    chown -R "$USER_UID:$USER_UID" "$user_home/.local" 2>/dev/null || true
+
+    # Fix Log Directory Permissions
+    # Docker volumes usage might result in root-owned log dirs
+    mkdir -p "$LOG_DIR"
+    chown -R "$USER_UID:$USER_UID" "$LOG_DIR"
+    chmod 755 "$LOG_DIR"
+    
+    log "INFO" "Permissions fixed."
+}
+
+# Run initialization steps
+ensure_home_structure
+fix_permissions
+
+# ==============================================================================
+# Configuration of user password via Docker secrets or environment variable
 # ==============================================================================
 # Priority: Docker secrets > Environment variable > Default
 if [ -f "/run/secrets/user_password" ]; then
@@ -58,7 +123,31 @@ fi
 # Setup desktop environment for all users
 # ==============================================================================
 log "INFO" "Setting up desktop environment..."
-sudo -u "$USER_NAME" /usr/local/bin/setup-desktop.sh
+if [ -f "/usr/local/bin/setup-desktop.sh" ]; then
+     # Run setup-desktop as the target user to ensure files created are owned by them
+    sudo -u "$USER_NAME" /usr/local/bin/setup-desktop.sh
+else
+    log "WARN" "setup-desktop.sh not found, skipping specific desktop setup"
+fi
+
+# ==============================================================================
+# Runtime Configuration Checks
+# ==============================================================================
+log "INFO" "Verifying home directory structure for $USER_NAME..."
+ensure_home_structure
+
+log "INFO" "Fixing permissions..."
+fix_permissions
+log "INFO" "Permissions fixed."
+
+# Fix localhost resolution (Force IPv4 for XRDP -> Socat -> Sesman chain)
+# Docker adds "::1 localhost" which confuses XRDP/Socat routing. We remove it.
+if grep -q "::1" /etc/hosts; then
+    log "INFO" "Forcing IPv4 localhost resolution..."
+    cp /etc/hosts /tmp/hosts
+    sed -i '/::1/d' /tmp/hosts
+    cat /tmp/hosts > /etc/hosts
+fi
 
 # ==============================================================================
 # Configure Keyring for User
@@ -89,6 +178,14 @@ mkdir -p /var/run/dbus
 mkdir -p /var/run/xrdp
 mkdir -p /var/run/sshd
 
+# Create XDG_RUNTIME_DIR for the user (fixes dbus and xfce session issues)
+if [ ! -d "/run/user/$USER_UID" ]; then
+    log "INFO" "Creating XDG_RUNTIME_DIR for user $USER_UID..."
+    mkdir -p "/run/user/$USER_UID"
+    chown "$USER_UID:$USER_UID" "/run/user/$USER_UID"
+    chmod 700 "/run/user/$USER_UID"
+fi
+
 # ==============================================================================
 # Setup Log Rotation
 # ==============================================================================
@@ -115,27 +212,19 @@ fi
 # Keyring already configured above
 
 # ==============================================================================
-# Starts D-Bus (Message Bus for inter-process communication)
+# Starts Deskbox Services
 # ==============================================================================
-# Required for desktop applications and XFCE4
-if [ ! -f /var/run/dbus/pid ]; then
-    log "INFO" "Starting D-Bus..."
-    dbus-daemon --system --fork
-    log "INFO" "D-Bus started successfully"
-else
-    log "INFO" "D-Bus is already running"
-fi
+log "INFO" "Starting D-Bus..."
+service dbus start
 
-# ==============================================================================
-# Starts SSH Server
-# ==============================================================================
 log "INFO" "Starting SSH server..."
 /usr/sbin/sshd
 log "INFO" "SSH server started on port 22 (exposed as 2222)"
 
-# ==============================================================================
-# Starts XRDP Session Manager (manages user sessions)
-# ==============================================================================
+log "INFO" "Starting sesman IPv4->IPv6 bridge..."
+# Sesman binds to ::1 but xrdp wants 127.0.0.1. We bridge them.
+socat TCP4-LISTEN:3350,bind=127.0.0.1,fork TCP6:[::1]:3350 &
+
 log "INFO" "Starting xrdp-sesman..."
 /usr/sbin/xrdp-sesman &
 log "INFO" "xrdp-sesman started"

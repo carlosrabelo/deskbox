@@ -1,10 +1,10 @@
 # Deskbox - Ambiente de Desktop Remoto
 
-Container Docker com Debian 13 (Trixie) + Xfce4 + XRDP para acesso remoto via Remote Desktop Protocol.
+Container Docker com Debian 12 (Bookworm) + Xfce4 + XRDP para acesso remoto via Remote Desktop Protocol.
 
 ## Recursos
 
-- **Base**: Debian 13 (Trixie) - Versão testing
+- **Base**: Debian 12 (Bookworm) - Release estáveling
 - **Ambiente Desktop**: Xfce4 (com auto-configuração no primeiro login)
 - **Acesso Remoto**:
   - XRDP (porta 3389) - Remote Desktop Protocol
@@ -46,6 +46,32 @@ TZ=America/Cuiaba
 ```
 
 **IMPORTANTE**: Nunca faça commit do arquivo `.env` no Git!
+
+### Opções de Segurança
+
+#### Configuração Padrão
+```bash
+# Usa variáveis de ambiente do .env
+make start CTX=hostname
+```
+
+#### Configuração de Produção (Recomendado)
+```bash
+# Define senha segura no arquivo .env
+echo "USER_PASSWORD=sua_senha_segura" >> .env
+make start CTX=hostname
+```
+
+### Notas Importantes de Segurança
+
+1. **Gerenciamento de Senhas**
+   - **Desenvolvimento**: Variáveis de ambiente (arquivo `.env`)
+   - **Nunca commite senhas no Git**
+
+2. **Acesso de Rede**
+   - **Padrão**: RDP exposto em `0.0.0.0:3389`
+   - **Seguro**: Você pode restringir para localhost definindo `RDP_BIND_ADDRESS=127.0.0.1` no `.env`
+   - **Túnel SSH**: Opção mais segura para acesso remoto
 
 ### 2. Inicializar Diretórios (Primeira vez)
 

@@ -30,6 +30,7 @@ xarchiver
 pulseaudio
 pavucontrol
 gnome-keyring
+libpam-gnome-keyring
 libcanberra-gtk3-module
 openssh-server
 git
@@ -46,3 +47,4 @@ lightdm
 desktop-base
 gnome-backgrounds
 chromium
+dbus-x11
