@@ -27,9 +27,11 @@ echo "$USER_NAME ALL=(ALL) ALL" >> /etc/sudoers
 chown -R $USER_NAME:$USER_NAME /home/$USER_NAME
 
 # SSH Server Configuration
+# SSH Server Configuration
 mkdir -p /var/run/sshd
 sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
 sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+sed -i 's/#Port 22/Port 2222/' /etc/ssh/sshd_config
 echo "AllowUsers $USER_NAME" >> /etc/ssh/sshd_config
 
 # Docker Secrets Support

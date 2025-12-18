@@ -47,25 +47,20 @@ TZ=America/Cuiaba
 
 **IMPORTANT**: Never commit the `.env` file to Git!
 
-### 2. Initialize Directories (First time)
+### 2. Build Image
 
-```bash
-make init CTX=hostname
-```
-
-### 3. Build Image
 
 ```bash
 make build CTX=hostname
 ```
 
-### 4. Start Container
+### 3. Start Container
 
 ```bash
 make start CTX=hostname
 ```
 
-### 5. Connect to Deskbox
+### 4. Connect to Deskbox
 
 **Option 1: RDP (Graphical Desktop)**
 
@@ -97,7 +92,6 @@ scp -P 2222 file.txt deskbox@hostname:/home/deskbox/
 
 | Command | Description |
 |---------|-----------|
-| `make init` | Initialize directory structure on remote host |
 | `make build` | Build Docker image (creates VERSION and latest tags) |
 | `make push` | Push images to Docker Hub (VERSION and latest) |
 | `make start` | Start container |
@@ -287,7 +281,7 @@ make start CTX=hostname
 
 4. **Chromium Browser**
    - Runs with `--no-sandbox` (required for containers)
-   - **Safe**: Docker provides container-level isolation
+   - **SSH Access**: Port `2222` (mapped to `2222` inside container)
    - **Standard approach** for browsers in containers
 
 ### Security Best Practices

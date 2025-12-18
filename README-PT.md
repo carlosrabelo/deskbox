@@ -73,25 +73,19 @@ make start CTX=hostname
    - **Seguro**: Você pode restringir para localhost definindo `RDP_BIND_ADDRESS=127.0.0.1` no `.env`
    - **Túnel SSH**: Opção mais segura para acesso remoto
 
-### 2. Inicializar Diretórios (Primeira vez)
-
-```bash
-make init CTX=hostname
-```
-
-### 3. Construir Imagem
+### 2. Construir Imagem
 
 ```bash
 make build CTX=hostname
 ```
 
-### 4. Iniciar Container
+### 3. Iniciar Container
 
 ```bash
 make start CTX=hostname
 ```
 
-### 5. Conectar ao Debian-RDP
+### 4. Conectar ao Deskbox
 
 **Opção 1: RDP (Desktop Gráfico)**
 
@@ -99,11 +93,11 @@ Use um cliente RDP (como Remmina, Microsoft Remote Desktop, ou rdesktop):
 
 ```bash
 # Linux
-rdesktop -u debian-rdp -p sua_senha hostname:3389
+rdesktop -u deskbox -p sua_senha hostname:3389
 
 # Ou com Remmina
 # Host: hostname:3389
-# Usuário: debian-rdp
+# Usuário: deskbox
 # Senha: a que você definiu no .env
 ```
 
@@ -113,17 +107,16 @@ Conecte via SSH para acesso por linha de comando:
 
 ```bash
 # Acesso SSH
-ssh -p 2222 debian-rdp@hostname
+ssh -p 2222 deskbox@hostname
 
 # Ou com SCP para transferir arquivos
-scp -P 2222 arquivo.txt debian-rdp@hostname:/home/debian-rdp/
+scp -P 2222 arquivo.txt deskbox@hostname:/home/deskbox/
 ```
 
 ## Comandos Make Disponíveis
 
 | Comando | Descrição |
 |---------|-----------|
-| `make init` | Inicializa estrutura de diretórios no host remoto |
 | `make build` | Constrói a imagem Docker (cria tags VERSION e latest) |
 | `make push` | Envia imagens para Docker Hub (VERSION e latest) |
 | `make start` | Inicia o container |
@@ -131,10 +124,10 @@ scp -P 2222 arquivo.txt debian-rdp@hostname:/home/debian-rdp/
 | `make restart` | Reinicia o container |
 | `make ps` | Lista containers em execução |
 | `make logs` | Exibe logs do Docker Compose em tempo real |
-| `make view-logs` | Visualiza logs de startup e XRDP do Debian-RDP |
+| `make view-logs` | Visualiza logs de startup e XRDP do Deskbox |
 | `make sessions` | Mostra sessões de usuários ativos |
-| `make backup` | Cria backup de /mnt/debian-rdp/home |
-| `make exec SVC=debian-rdp` | Abre shell no container |
+| `make backup` | Cria backup de /mnt/deskbox/home |
+| `make exec SVC=deskbox` | Abre shell no container |
 | `make config` | Exibe configuração do Docker Compose |
 | `make clean` | Remove imagens Docker locais (versão atual) |
 | `make clean-all` | Para containers e remove todas as imagens do projeto |
@@ -450,8 +443,8 @@ ssh root@hostname "tar -czf /tmp/debian-rdp-logs-backup.tar.gz /mnt/debian-rdp/l
 
 1. Verifique se a porta SSH está exposta:
    ```bash
-   docker ps | grep debian-rdp
-   # Deve mostrar 0.0.0.0:2222->22/tcp
+   docker ps | grep deskbox
+   # Deve mostrar 0.0.0.0:2222->2222/tcp
    ```
 
 2. Teste conectividade SSH:
@@ -461,7 +454,7 @@ ssh root@hostname "tar -czf /tmp/debian-rdp-logs-backup.tar.gz /mnt/debian-rdp/l
 
 3. Tente conectar com modo verbose:
    ```bash
-   ssh -v -p 2222 debian-rdp@hostname
+   ssh -v -p 2222 deskbox@hostname
    ```
 
 ### Tela preta após login
@@ -474,13 +467,13 @@ ssh root@hostname "tar -czf /tmp/debian-rdp-logs-backup.tar.gz /mnt/debian-rdp/l
 2. Verifique permissões do diretório home:
    ```bash
    make exec SVC=debian-rdp CTX=hostname
-   ls -la /home/debian-rdp
+   ls -la /home/deskbox
    ```
 
 3. Verifique a configuração do XFCE4:
    ```bash
    make exec SVC=debian-rdp CTX=hostname
-   cat /home/debian-rdp/.xsession
+   cat /home/deskbox/.xsession
    # Deve conter: startxfce4
    ```
 

@@ -219,7 +219,7 @@ service dbus start
 
 log "INFO" "Starting SSH server..."
 /usr/sbin/sshd
-log "INFO" "SSH server started on port 22 (exposed as 2222)"
+log "INFO" "SSH server started on port 2222"
 
 log "INFO" "Starting sesman IPv4->IPv6 bridge..."
 # Sesman binds to ::1 but xrdp wants 127.0.0.1. We bridge them.

@@ -80,7 +80,7 @@ RUN chmod +x /usr/local/bin/start-xrdp.sh \
     /usr/local/bin/log-rotation.sh
 
 # Expose Ports
-EXPOSE 3389 22
+EXPOSE 3389 2222
 
 # Entrypoint
 CMD ["/usr/local/bin/start-xrdp.sh"]

@@ -22,7 +22,7 @@ services:
     # Exposes RDP (Remote Desktop Protocol) port and SSH port
     ports:
       - "${RDP_BIND_ADDRESS:-0.0.0.0}:3389:3389" # RDP - Configurable bind address
-      - "2222:22" # SSH
+      - "2222:2222" # SSH
 
     # Restarts automatically except if manually stopped
     restart: unless-stopped

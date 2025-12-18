@@ -95,6 +95,8 @@ build:
 		$(DOCKER_CMD) tag $(REPO_IMAGE):$(VERSION) $(REPO_IMAGE):latest; \
 		echo "Tagged as $(REPO_IMAGE):$(VERSION) and $(REPO_IMAGE):latest"; \
 	fi
+	@tput cnorm 2>/dev/null || true
+	@tput cnorm 2>/dev/null || true
 
 # Initializes directory structure on remote host via Docker Context
 # Creates /mnt/deskbox/home and basic user structure
@@ -109,31 +111,38 @@ init:
 # --remove-orphans: removes orphan containers from previous runs
 start:
 	@DOCKER_USER=$(DOCKER_USER) IMAGE_NAME=$(IMAGE_NAME) VERSION=$(VERSION) $(COMPOSE) up -d --remove-orphans
+	@tput cnorm 2>/dev/null || true
 
 # Stops and removes containers, networks, and anonymous volumes
 stop:
 	@$(COMPOSE) down
+	@tput cnorm 2>/dev/null || true
 
 # Restarts containers (stop + start)
 restart: stop start
+	@tput cnorm 2>/dev/null || true
 
 # Lists container status
 ps:
 	@$(COMPOSE) ps
+	@tput cnorm 2>/dev/null || true
 
 # Displays real-time logs (last 100 lines)
 # Use Ctrl+C to exit
 logs:
 	@$(COMPOSE) logs -f --tail=100
+	@tput cnorm 2>/dev/null || true
 
 # Opens bash shell in a specific container
 # Usage: make exec SVC=deskbox
 exec:
 	@$(COMPOSE) exec $(SVC) /bin/bash
+	@tput cnorm 2>/dev/null || true
 
 # Validates and displays processed docker-compose.yml configuration
 config:
 	@DOCKER_USER=$(DOCKER_USER) IMAGE_NAME=$(IMAGE_NAME) VERSION=$(VERSION) $(COMPOSE) config
+	@tput cnorm 2>/dev/null || true
 
 # Builds and pushes image to Docker Hub
 # Requires: docker login to your Docker Hub account
@@ -151,6 +160,7 @@ push: build
 clean:
 	@echo "Removing local images..."
 	@$(DOCKER_CMD) rmi $(REPO_IMAGE):$(VERSION) 2>/dev/null || true
+	@tput cnorm 2>/dev/null || true
 	@if [ "$(VERSION)" != "latest" ]; then \
 		$(DOCKER_CMD) rmi $(REPO_IMAGE):latest 2>/dev/null || true; \
 	fi
